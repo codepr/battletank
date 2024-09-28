@@ -2,13 +2,20 @@ CC = gcc
 CFLAGS = -Wall -Wextra -g
 LDFLAGS = -lncurses
 
-SRC = $(filter-out battletank-server.c, $(wildcard *.c))
+SRC = $(filter-out battletank_server.c, $(wildcard *.c))
 OBJ = $(SRC:.c=.o)
 EXEC = battletank-client
 
-all: $(EXEC)
+SERVER_SRC = battletank_server.c protocol.c network.c game_state.c
+SERVER_OBJ = $(SERVER_SRC:.c=.o)
+SERVER_EXEC = battletank-server
+
+all: $(EXEC) $(SERVER_EXEC)
 
 $(EXEC): $(OBJ)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+$(SERVER_EXEC): $(SERVER_OBJ)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 %.o: %.c
