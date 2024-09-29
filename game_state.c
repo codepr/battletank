@@ -110,7 +110,7 @@ static void check_collision(Tank *tank, Bullet *bullet) {
  * between tanks and bullets.
  *
  * - Creates an array of pointers to each player's bullet for easy access during
- * collision checks.
+ *   collision checks.
  * - For each player:
  *   - Updates their bullet by calling `update_bullet`.
  *   - Checks for collisions between the player's tank and every other player's

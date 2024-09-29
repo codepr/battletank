@@ -13,14 +13,15 @@
  *
  *  0. You just DO WHAT THE FUCK YOU WANT TO.
  *
- * Main server, handle the game state and serves as the unique authoritative
+ * Main server, handles the game state and serves as the unique authoritative
  * source of truth.
  *
  * - clients sync at their first connection and their tank is spawned in the
  *   battlefield, the server will send a unique identifier to the clients (an
  *   int index for the time being, that represents the tank assigned to the
  *   player in the game state)
- * - the server continually broadcast the game state to keep the clients in sync
+ * - the server continually broadcasts the game state to keep the clients in
+ *   sync
  * - clients will send actions to the servers such as movements or bullet fire
  * - the server will update the general game state and let it be broadcast in
  *   the following cycle
