@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define AMMO 5
+#define MAX_AMMO 5
 #define MAX_PLAYERS 10
 #define BASE_HP 3
 
@@ -37,7 +37,7 @@ typedef struct {
     int hp;
     Direction direction;
     bool alive;
-    Bullet bullet[AMMO];
+    Bullet bullet[MAX_AMMO];
 } Tank;
 
 typedef struct {

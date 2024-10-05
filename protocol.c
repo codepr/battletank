@@ -59,7 +59,7 @@ static int protocol_serialize_tank(const Tank *tank, char *buf) {
 
     // Serialize the bullet
     int offset = 0;
-    for (int i = 0; i < AMMO; ++i)
+    for (int i = 0; i < MAX_AMMO; ++i)
         offset += protocol_serialize_bullet(&tank->bullet[i], buf + offset);
 
     return offset + SIZEOF_TANK;
@@ -92,7 +92,7 @@ static int protocol_deserialize_tank(const char *buf, Tank *tank) {
     tank->direction = *buf++;
 
     int offset = 0;
-    for (int i = 0; i < AMMO; ++i)
+    for (int i = 0; i < MAX_AMMO; ++i)
         offset += protocol_deserialize_bullet(buf + offset, &tank->bullet[i]);
 
     return offset + SIZEOF_TANK;
@@ -130,8 +130,9 @@ int protocol_serialize_game_state(const Game_State *state, char *buf) {
     // Serialize the game state header
     int active_players = state->active_players;
     // Total length will include itself in the full length of the packet
-    int total_length = (SIZEOF_TANK + (SIZEOF_BULLET * AMMO)) * MAX_PLAYERS +
-                       (sizeof(int) * 5) + sizeof(unsigned char);
+    int total_length =
+        (SIZEOF_TANK + (SIZEOF_BULLET * MAX_AMMO)) * MAX_PLAYERS +
+        (sizeof(int) * 5) + sizeof(unsigned char);
 
     bin_write_i32(buf, total_length);
     int offset = sizeof(int);

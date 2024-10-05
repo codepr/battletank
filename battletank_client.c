@@ -98,7 +98,7 @@ static void render_game(const Game_State *state, size_t index) {
     clear();
     for (size_t i = 0; i < MAX_PLAYERS; ++i) {
         render_tank(&state->players[i]);
-        for (size_t j = 0; j < AMMO; ++j)
+        for (size_t j = 0; j < MAX_AMMO; ++j)
             render_bullet(&state->players[i].bullet[j]);
     }
 
