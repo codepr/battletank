@@ -72,7 +72,8 @@ static void render_bullet(const Bullet *const bullet) {
 
 static void render_stats(const Game_State *state, size_t index) {
     int bullet_count = game_state_ammo(state, index);
-    mvprintw(0, 0, "%d", bullet_count);
+    mvprintw(0, 0, "HP: %d", state->players[index].hp);
+    mvprintw(1, 0, "AMMO: %d", bullet_count);
 }
 
 static void render_game(const Game_State *state, size_t index) {

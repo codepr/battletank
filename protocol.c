@@ -6,7 +6,7 @@
  */
 #include "protocol.h"
 
-#define SIZEOF_TANK sizeof(int) * 2 + sizeof(unsigned char) * 2
+#define SIZEOF_TANK sizeof(int) * 3 + sizeof(unsigned char) * 2
 #define SIZEOF_BULLET sizeof(int) * 2 + sizeof(unsigned char) * 2
 
 void bin_write_i32(char *buf, int val) {
@@ -51,6 +51,9 @@ static int protocol_serialize_tank(const Tank *tank, char *buf) {
     bin_write_i32(buf, tank->y);
     buf += sizeof(int);
 
+    bin_write_i32(buf, tank->hp);
+    buf += sizeof(int);
+
     *buf++ = tank->alive;
     *buf++ = tank->direction;
 
@@ -80,6 +83,9 @@ static int protocol_deserialize_tank(const char *buf, Tank *tank) {
     buf += sizeof(int);
 
     tank->y = bin_read_i32(buf);
+    buf += sizeof(int);
+
+    tank->hp = bin_read_i32(buf);
     buf += sizeof(int);
 
     tank->alive = *buf++;

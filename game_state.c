@@ -18,6 +18,7 @@ void game_state_init(Game_State *state) {
     for (size_t i = 0; i < MAX_PLAYERS; ++i) {
         state->players[i].x = 0;
         state->players[i].y = 0;
+        state->players[i].hp = 0;
         state->players[i].direction = IDLE;
         state->players[i].alive = false;
         for (size_t j = 0; j < AMMO; ++j)
@@ -30,6 +31,7 @@ void game_state_free(Game_State *state) { free(state->players); }
 void game_state_spawn_tank(Game_State *state, size_t index) {
     if (!state->players[index].alive) {
         state->players[index].alive = true;
+        state->players[index].hp = BASE_HP;
         state->players[index].x = RANDOM(15, 25);
         state->players[index].y = RANDOM(15, 25);
         state->players[index].direction = IDLE;
@@ -39,6 +41,7 @@ void game_state_spawn_tank(Game_State *state, size_t index) {
 
 void game_state_dismiss_tank(Game_State *state, size_t index) {
     state->players[index].alive = false;
+    state->players[index].hp = 0;
     state->active_players--;
 }
 
@@ -109,7 +112,9 @@ static void update_bullet(Bullet *bullet) {
 
 static void check_collision(Tank *tank, Bullet *bullet) {
     if (bullet->active && tank->x == bullet->x && tank->y == bullet->y) {
-        tank->alive = false;
+        tank->hp--;
+        if (tank->hp < 0) tank->hp = 0;
+        if (tank->hp == 0) tank->alive = false;
         bullet->active = false;
     }
 }

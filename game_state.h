@@ -6,6 +6,7 @@
 
 #define AMMO 5
 #define MAX_PLAYERS 10
+#define BASE_HP 3
 
 // Possible directions a tank or bullet can move.
 typedef enum { IDLE, UP, DOWN, LEFT, RIGHT } Direction;
@@ -31,6 +32,7 @@ typedef struct {
 typedef struct {
     int x;
     int y;
+    int hp;
     Direction direction;
     bool alive;
     Bullet bullet[AMMO];
