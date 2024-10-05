@@ -70,13 +70,20 @@ static void render_bullet(const Bullet *const bullet) {
     }
 }
 
-static void render_game(const Game_State *state) {
+static void render_stats(const Game_State *state, size_t index) {
+    int bullet_count = game_state_ammo(state, index);
+    mvprintw(0, 0, "%d", bullet_count);
+}
+
+static void render_game(const Game_State *state, size_t index) {
     clear();
     for (size_t i = 0; i < MAX_PLAYERS; ++i) {
         render_tank(&state->players[i]);
         for (size_t j = 0; j < AMMO; ++j)
             render_bullet(&state->players[i].bullet[j]);
     }
+
+    render_stats(state, index);
     refresh();
 }
 
@@ -199,7 +206,7 @@ static void game_loop(void) {
         }
         n = client_recv_data(sockfd, buf);
         protocol_deserialize_game_state(buf, &state);
-        render_game(&state);
+        render_game(&state, index);
     }
 }
 

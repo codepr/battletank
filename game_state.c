@@ -145,6 +145,8 @@ void game_state_update(Game_State *state) {
     }
 }
 
+// TODO make this more efficient by counting the ammo directly in
+// the player state instead of scanning for active
 int game_state_ammo(const Game_State *state, size_t index) {
     int count = 0;
     for (int i = 0; i < AMMO; ++i) {
