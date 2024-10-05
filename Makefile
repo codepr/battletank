@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g
+CFLAGS = -Wall -Wextra -g -ggdb -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -pg
 LDFLAGS = -lncurses
 
 SRC = $(filter-out battletank_server.c, $(wildcard *.c))

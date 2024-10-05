@@ -72,9 +72,10 @@ static void render_bullet(const Bullet *const bullet) {
 
 static void render_game(const Game_State *state) {
     clear();
-    for (size_t i = 0; i < state->players_count; ++i) {
+    for (size_t i = 0; i < MAX_PLAYERS; ++i) {
         render_tank(&state->players[i]);
-        render_bullet(&state->players[i].bullet);
+        for (size_t j = 0; j < AMMO; ++j)
+            render_bullet(&state->players[i].bullet[j]);
     }
     refresh();
 }
@@ -179,11 +180,19 @@ static void game_loop(void) {
     // Sync the game state for the first time
     int n = client_recv_data(sockfd, buf);
     protocol_deserialize_game_state(buf, &state);
+    size_t index = state.player_index;
     unsigned action = IDLE;
+    bool valid_action = false;
+    bool is_direction = false;
+    bool can_fire = false;
 
     while (1) {
         action = handle_input();
-        if (action != IDLE) {
+        is_direction = (action == UP || action == DOWN || action == LEFT ||
+                        action == RIGHT);
+        can_fire = (action == FIRE && game_state_ammo(&state, index) > 0);
+        valid_action = is_direction || can_fire;
+        if (valid_action) {
             memset(buf, 0x00, sizeof(buf));
             n = protocol_serialize_action(action, buf);
             client_send_data(sockfd, buf, n);

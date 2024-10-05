@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define AMMO 5
+#define MAX_PLAYERS 10
+
 // Possible directions a tank or bullet can move.
 typedef enum { IDLE, UP, DOWN, LEFT, RIGHT } Direction;
 
@@ -30,12 +33,12 @@ typedef struct {
     int y;
     Direction direction;
     bool alive;
-    Bullet bullet;
+    Bullet bullet[AMMO];
 } Tank;
 
 typedef struct {
-    Tank *players;
-    size_t players_count;
+    Tank players[MAX_PLAYERS];
+    size_t active_players;
     size_t player_index;
 } Game_State;
 
@@ -49,6 +52,7 @@ void game_state_spawn_tank(Game_State *state, size_t index);
 void game_state_dismiss_tank(Game_State *state, size_t index);
 void game_state_update_tank(Game_State *state, size_t tank_index,
                             unsigned action);
+int game_state_ammo(const Game_State *state, size_t index);
 
 const char *str_action(unsigned action);
 

@@ -189,6 +189,11 @@ static void server_loop(int server_fd) {
 
             for (i = 0; i < FD_SETSIZE; i++) {
                 if (client_fds[i] < 0) {
+                    if (i > MAX_PLAYERS) {
+                        printw("Players limit reached, dropping connection");
+                        i = FD_SETSIZE;
+                        break;
+                    }
                     client_fds[i] = client_fd;
                     game_state.player_index = i;
                     break;
@@ -209,16 +214,8 @@ static void server_loop(int server_fd) {
             // Spawn a tank in a random position for the new connected
             // player
             game_state_spawn_tank(&game_state, game_state.player_index);
-
-            // Send the game state
-            ssize_t bytes = protocol_serialize_game_state(&game_state, buf);
-            bytes = network_send(client_fd, buf, bytes);
-            if (bytes < 0) {
-                perror("network_send() error");
-                continue;
-            }
-
-            printw("[info] Game state sync completed (%d bytes)\n", bytes);
+            printw("[info] Tank for player-%d spawned\n",
+                   game_state.player_index);
         }
 
         for (i = 0; i < FD_SETSIZE; i++) {
@@ -229,12 +226,12 @@ static void server_loop(int server_fd) {
                     close(fd);
                     game_state_dismiss_tank(&game_state, i);
                     client_fds[i] = -1;
-                    printw("[info] Player [%d] disconnected\n", i);
+                    printw("[info] Player-%d disconnected\n", i);
                 } else {
                     unsigned action = 0;
                     protocol_deserialize_action(buf, &action);
                     printw(
-                        "[info] Received an action %s from player [%d] (%ld "
+                        "[info] Received an action %s from player-%d (%ld "
                         "bytes)\n",
                         str_action(action), i, count);
                     game_state_update_tank(&game_state, i, action);

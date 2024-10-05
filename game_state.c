@@ -6,42 +6,51 @@
 
 #define RANDOM(min, max) min + rand() / (RAND_MAX / (max - min + 1) + 1)
 
+static void init_bullet(const Tank *tank, Bullet *bullet) {
+    bullet->active = false;
+    bullet->x = tank->x;
+    bullet->y = tank->y;
+    bullet->direction = tank->direction;
+}
+
 void game_state_init(Game_State *state) {
-    state->players_count = 2;
-    state->players = calloc(2, sizeof(Tank));
-    for (size_t i = 0; i < state->players_count; ++i) {
+    state->active_players = 0;
+    for (size_t i = 0; i < MAX_PLAYERS; ++i) {
+        state->players[i].x = 0;
+        state->players[i].y = 0;
+        state->players[i].direction = IDLE;
         state->players[i].alive = false;
-        state->players[i].bullet.active = false;
+        for (size_t j = 0; j < AMMO; ++j)
+            init_bullet(&state->players[i], &state->players[i].bullet[j]);
     }
 }
 
 void game_state_free(Game_State *state) { free(state->players); }
 
 void game_state_spawn_tank(Game_State *state, size_t index) {
-    // Extend the players pool if we're at capacity
-    if (index > state->players_count) {
-        state->players_count *= 2;
-        state->players = realloc(state->players, state->players_count);
-    }
-
     if (!state->players[index].alive) {
         state->players[index].alive = true;
         state->players[index].x = RANDOM(15, 25);
         state->players[index].y = RANDOM(15, 25);
-        state->players[index].direction = 0;
+        state->players[index].direction = IDLE;
+        state->active_players++;
     }
 }
 
 void game_state_dismiss_tank(Game_State *state, size_t index) {
     state->players[index].alive = false;
+    state->active_players--;
 }
 
 static void fire_bullet(Tank *tank) {
-    if (!tank->bullet.active) {
-        tank->bullet.active = true;
-        tank->bullet.x = tank->x;
-        tank->bullet.y = tank->y;
-        tank->bullet.direction = tank->direction;
+    for (int i = 0; i < AMMO; ++i) {
+        if (!tank->bullet[i].active) {
+            tank->bullet[i].active = true;
+            tank->bullet[i].x = tank->x;
+            tank->bullet[i].y = tank->y;
+            tank->bullet[i].direction = tank->direction;
+            break;
+        }
     }
 }
 
@@ -118,17 +127,30 @@ static void check_collision(Tank *tank, Bullet *bullet) {
  * - Skips collision checks between a player and their own bullet.
  */
 void game_state_update(Game_State *state) {
-    Bullet *bullets[state->players_count];
-    for (size_t i = 0; i < state->players_count; ++i)
-        bullets[i] = &state->players[i].bullet;
-
-    for (size_t i = 0; i < state->players_count; ++i) {
-        update_bullet(&state->players[i].bullet);
-        for (size_t j = 0; j < state->players_count; ++j) {
-            if (j == i) continue;  // Skip self collision
-            check_collision(&state->players[i], bullets[j]);
+    Bullet *bullets[MAX_PLAYERS][AMMO];
+    for (size_t i = 0; i < MAX_PLAYERS; ++i) {
+        for (size_t j = 0; j < AMMO; ++j) {
+            update_bullet(&state->players[i].bullet[j]);
+            bullets[i][j] = &state->players[i].bullet[j];
         }
     }
+
+    for (size_t i = 0; i < MAX_PLAYERS; ++i) {
+        for (size_t k = 0; k < MAX_PLAYERS; ++k) {
+            for (size_t j = 0; j < AMMO; ++j) {
+                if (k == i) continue;
+                check_collision(&state->players[i], bullets[k][j]);
+            }
+        }
+    }
+}
+
+int game_state_ammo(const Game_State *state, size_t index) {
+    int count = 0;
+    for (int i = 0; i < AMMO; ++i) {
+        if (!state->players[index].bullet[i].active) count++;
+    }
+    return count;
 }
 
 const char *str_action(unsigned action) {
