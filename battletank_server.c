@@ -49,6 +49,7 @@
 #define BUFSIZE 1024
 #define BACKLOG 128
 #define TIMEOUT 70000
+#define POWERUP_COUNTER 70
 
 // Generic global game state
 static Game_State game_state = {0};
@@ -151,6 +152,7 @@ static void server_loop(int server_fd) {
     int i = 0;
     char buf[BUFSIZE];
     struct timeval tv = {0, TIMEOUT};
+    size_t spawn_counter = 0;
 
     // Initialize client_fds array
     for (i = 0; i < FD_SETSIZE; i++) {
@@ -239,6 +241,13 @@ static void server_loop(int server_fd) {
                 }
             }
         }
+        // Poor man periodic task
+        if (++spawn_counter >= POWERUP_COUNTER) {
+            spawn_counter = 0;
+            game_state_generate_power_up(&game_state);
+            printw("[info] Generated power up\n");
+        }
+
         // Main update loop here
         game_state_update(&game_state);
         size_t bytes = protocol_serialize_game_state(&game_state, buf);

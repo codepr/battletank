@@ -70,6 +70,24 @@ static void render_bullet(const Bullet *const bullet) {
     }
 }
 
+static void render_power_up(const Game_State *state) {
+    if (state->power_up.kind == NONE) return;
+
+    switch (state->power_up.kind) {
+        case HP_PLUS_ONE:
+            mvprintw(state->power_up.y, state->power_up.x, "HP+1");
+            break;
+        case HP_PLUS_THREE:
+            mvprintw(state->power_up.y, state->power_up.x, "HP+3");
+            break;
+        case AMMO_PLUS_ONE:
+            mvprintw(state->power_up.y, state->power_up.x, "HP+1");
+            break;
+        default:
+            break;
+    }
+}
+
 static void render_stats(const Game_State *state, size_t index) {
     int bullet_count = game_state_ammo(state, index);
     mvprintw(0, 0, "HP: %d", state->players[index].hp);
@@ -83,6 +101,8 @@ static void render_game(const Game_State *state, size_t index) {
         for (size_t j = 0; j < AMMO; ++j)
             render_bullet(&state->players[i].bullet[j]);
     }
+
+    render_power_up(state);
 
     render_stats(state, index);
     refresh();

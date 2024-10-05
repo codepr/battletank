@@ -15,6 +15,9 @@ static void init_bullet(const Tank *tank, Bullet *bullet) {
 
 void game_state_init(Game_State *state) {
     state->active_players = 0;
+    state->power_up.x = 0;
+    state->power_up.y = 0;
+    state->power_up.kind = NONE;
     for (size_t i = 0; i < MAX_PLAYERS; ++i) {
         state->players[i].x = 0;
         state->players[i].y = 0;
@@ -43,6 +46,12 @@ void game_state_dismiss_tank(Game_State *state, size_t index) {
     state->players[index].alive = false;
     state->players[index].hp = 0;
     state->active_players--;
+}
+
+void game_state_generate_power_up(Game_State *state) {
+    state->power_up.x = RANDOM(1, COLS);
+    state->power_up.y = RANDOM(1, LINES);
+    state->power_up.kind = RANDOM(1, 3);
 }
 
 static void fire_bullet(Tank *tank) {
@@ -110,6 +119,26 @@ static void update_bullet(Bullet *bullet) {
     }
 }
 
+static void check_power_up(Game_State *state, Tank *tank) {
+    if (state->power_up.kind != NONE && tank->x == state->power_up.x &&
+        tank->y == state->power_up.y) {
+        switch (state->power_up.kind) {
+            case HP_PLUS_ONE:
+                tank->hp++;
+                break;
+            case HP_PLUS_THREE:
+                tank->hp += 3;
+                break;
+            case AMMO_PLUS_ONE:
+                // TODO make this meaningful
+                break;
+            default:
+                break;
+        }
+        state->power_up.kind = NONE;
+    }
+}
+
 static void check_collision(Tank *tank, Bullet *bullet) {
     if (bullet->active && tank->x == bullet->x && tank->y == bullet->y) {
         tank->hp--;
@@ -134,6 +163,7 @@ static void check_collision(Tank *tank, Bullet *bullet) {
 void game_state_update(Game_State *state) {
     Bullet *bullets[MAX_PLAYERS][AMMO];
     for (size_t i = 0; i < MAX_PLAYERS; ++i) {
+        check_power_up(state, &state->players[i]);
         for (size_t j = 0; j < AMMO; ++j) {
             update_bullet(&state->players[i].bullet[j]);
             bullets[i][j] = &state->players[i].bullet[j];

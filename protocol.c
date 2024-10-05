@@ -131,7 +131,7 @@ int protocol_serialize_game_state(const Game_State *state, char *buf) {
     int active_players = state->active_players;
     // Total length will include itself in the full length of the packet
     int total_length = (SIZEOF_TANK + (SIZEOF_BULLET * AMMO)) * MAX_PLAYERS +
-                       (sizeof(int) * 3);
+                       (sizeof(int) * 5) + sizeof(unsigned char);
 
     bin_write_i32(buf, total_length);
     int offset = sizeof(int);
@@ -143,6 +143,16 @@ int protocol_serialize_game_state(const Game_State *state, char *buf) {
     // Players count
     bin_write_i32(buf + offset, active_players);
     offset += sizeof(int);
+
+    // Power up
+    bin_write_i32(buf + offset, state->power_up.x);
+    offset += sizeof(int);
+
+    bin_write_i32(buf + offset, state->power_up.y);
+    offset += sizeof(int);
+
+    *(buf + offset) = state->power_up.kind;
+    offset++;
 
     // Serialize each player
     for (int i = 0; i < MAX_PLAYERS; i++) {
@@ -162,6 +172,15 @@ int protocol_deserialize_game_state(const char *buf, Game_State *state) {
 
     state->active_players = bin_read_i32(buf);
     buf += sizeof(int);
+
+    state->power_up.x = bin_read_i32(buf);
+    buf += sizeof(int);
+
+    state->power_up.y = bin_read_i32(buf);
+    buf += sizeof(int);
+
+    state->power_up.kind = *buf;
+    buf++;
 
     int offset = 0;
 

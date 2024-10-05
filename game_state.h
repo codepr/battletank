@@ -17,6 +17,8 @@ typedef enum {
     FIRE = 5,
 } Action;
 
+typedef enum { NONE, HP_PLUS_ONE, HP_PLUS_THREE, AMMO_PLUS_ONE } Power_Up;
+
 // Represents a bullet with its position, direction, and status.
 // Can include bullet kinds as a possible update for the future.
 typedef struct {
@@ -42,12 +44,17 @@ typedef struct {
     Tank players[MAX_PLAYERS];
     size_t active_players;
     size_t player_index;
+    struct {
+        int x, y;
+        Power_Up kind;
+    } power_up;
 } Game_State;
 
 // General game state managing
 void game_state_init(Game_State *state);
 void game_state_free(Game_State *state);
 void game_state_update(Game_State *state);
+void game_state_generate_power_up(Game_State *state);
 
 // Tank management
 void game_state_spawn_tank(Game_State *state, size_t index);
