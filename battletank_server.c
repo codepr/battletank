@@ -29,7 +29,6 @@
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <ncurses.h>
 #include <netdb.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -202,7 +201,9 @@ static void server_loop(int server_fd) {
             for (i = 0; i < FD_SETSIZE; i++) {
                 if (client_fds[i] < 0) {
                     if (i > MAX_PLAYERS) {
-                        printw("Players limit reached, dropping connection");
+                        printf(
+                            "[INFO] Players limit reached, dropping "
+                            "connection");
                         i = FD_SETSIZE;
                         break;
                     }
@@ -218,15 +219,15 @@ static void server_loop(int server_fd) {
                 continue;
             }
 
-            printw("[info] New player connected\n");
-            printw("[info] Syncing game state\n");
-            printw("[info] Player assigned [%ld] tank\n",
+            printf("[INFO] New player connected\n");
+            printf("[INFO] Syncing game state\n");
+            printf("[INFO] Player assigned [%ld] tank\n",
                    game_state.player_index);
 
             // Spawn a tank in a random position for the new connected
             // player
             game_state_spawn_tank(&game_state, game_state.player_index);
-            printw("[info] Tank for player-%d spawned\n",
+            printf("[INFO] Tank for player-%ld spawned\n",
                    game_state.player_index);
         }
 
@@ -238,16 +239,16 @@ static void server_loop(int server_fd) {
                     close(fd);
                     game_state_dismiss_tank(&game_state, i);
                     client_fds[i] = -1;
-                    printw("[info] Player-%d disconnected\n", i);
+                    printf("[INFO] Player-%d disconnected\n", i);
                 } else {
-                    unsigned action = 0;
+                    unsigned action = IDLE;
                     protocol_deserialize_action(buf, &action);
-                    printw(
-                        "[info] Received an action %s from player-%d (%ld "
+                    printf(
+                        "[INFO] Received an action %s from player-%d (%ld "
                         "bytes)\n",
                         str_action(action), i, count);
                     game_state_update_tank(&game_state, i, action);
-                    printw("[info] Updating game state completed\n");
+                    printf("[INFO] Updating game state completed\n");
                 }
             }
         }
@@ -255,7 +256,7 @@ static void server_loop(int server_fd) {
         if (++spawn_counter >= POWERUP_COUNTER) {
             spawn_counter = 0;
             game_state_generate_power_up(&game_state);
-            printw("[info] Generated power up\n");
+            printf("[INFO] Generated power up\n");
         }
 
         // Send update to the connected clients, currently with a TIMEOUT of
@@ -276,20 +277,13 @@ static void server_loop(int server_fd) {
             tv.tv_sec = 0;
             tv.tv_usec = TIMEOUT - remaining_us;
         }
-        // We're using ncurses for convienince to initialise ROWS and LINES
-        // without going raw mode in the terminal, this requires a refresh to
-        // print the logs
-        refresh();
     }
 }
 
 int main(void) {
     srand(time(NULL));
-    // Use ncurses as its handy to calculate the screen size
-    initscr();
-    scrollok(stdscr, TRUE);
 
-    printw("[info] Starting server %d %d\n", COLS, LINES);
+    printf("[INFO] Starting server\n");
     game_state_init(&game_state);
 
     int server_fd = server_listen("127.0.0.1", 6699, BACKLOG);

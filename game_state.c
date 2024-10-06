@@ -1,7 +1,6 @@
 // Game state management, Tank and bullet logics, including collision
 #include "game_state.h"
 
-#include <ncurses.h>
 #include <stdlib.h>
 
 #define RANDOM(min, max) min + rand() / (RAND_MAX / (max - min + 1) + 1)
@@ -49,8 +48,8 @@ void game_state_dismiss_tank(Game_State *state, size_t index) {
 }
 
 void game_state_generate_power_up(Game_State *state) {
-    state->power_up.x = RANDOM(1, COLS);
-    state->power_up.y = RANDOM(1, LINES);
+    state->power_up.x = RANDOM(1, SCREEN_WIDTH);
+    state->power_up.y = RANDOM(1, SCREEN_HEIGHT);
     state->power_up.kind = RANDOM(1, 3);
 }
 
@@ -70,19 +69,19 @@ void game_state_update_tank(Game_State *state, size_t tank_index,
                             unsigned action) {
     switch (action) {
         case UP:
-            state->players[tank_index].y--;
+            state->players[tank_index].y -= 2;
             state->players[tank_index].direction = UP;
             break;
         case DOWN:
-            state->players[tank_index].y++;
+            state->players[tank_index].y += 2;
             state->players[tank_index].direction = DOWN;
             break;
         case LEFT:
-            state->players[tank_index].x--;
+            state->players[tank_index].x -= 2;
             state->players[tank_index].direction = LEFT;
             break;
         case RIGHT:
-            state->players[tank_index].x++;
+            state->players[tank_index].x += 2;
             state->players[tank_index].direction = RIGHT;
             break;
         case FIRE:
@@ -98,23 +97,23 @@ static void update_bullet(Bullet *bullet) {
 
     switch (bullet->direction) {
         case UP:
-            bullet->y--;
+            bullet->y -= 6;
             break;
         case DOWN:
-            bullet->y++;
+            bullet->y += 6;
             break;
         case LEFT:
-            bullet->x -= 2;
+            bullet->x -= 8;
             break;
         case RIGHT:
-            bullet->x += 2;
+            bullet->x += 8;
             break;
         default:
             break;
     }
 
-    if (bullet->x < 0 || bullet->x >= COLS || bullet->y < 0 ||
-        bullet->y >= LINES) {
+    if (bullet->x < 0 || bullet->x >= SCREEN_WIDTH || bullet->y < 0 ||
+        bullet->y >= SCREEN_HEIGHT) {
         bullet->active = false;
     }
 }

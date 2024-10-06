@@ -8,6 +8,9 @@
 #define MAX_PLAYERS 10
 #define BASE_HP 3
 
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
+
 // Possible directions a tank or bullet can move.
 typedef enum { IDLE, UP, DOWN, LEFT, RIGHT } Direction;
 

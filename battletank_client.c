@@ -25,7 +25,6 @@
  *   the following cycle
  */
 #include <arpa/inet.h>
-#include <ncurses.h>
 #include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,8 +33,12 @@
 #include "game_state.h"
 #include "network.h"
 #include "protocol.h"
+#include "raylib.h"
+#include "sprite.h"
 
 #define BUFSIZE 1024
+Spaceship_Repo ships_repo;
+Bullet_Repo bullets_repo;
 
 /*
  * RENDERING HELPERS
@@ -43,30 +46,53 @@
  * For the time being this represents the sole "graphic" layer, it's so small
  * it can comfortably live embedded in the client module.
  */
-static void init_screen(void) {
-    // Start curses mode
-    initscr();
-    cbreak();
-    // Don't echo keypresses to the screen
-    noecho();
-    // Enable keypad mode
-    keypad(stdscr, TRUE);
-    nodelay(stdscr, TRUE);
-    // Hide the cursor
-    curs_set(FALSE);
-}
-
-static void render_tank(const Tank *const tank) {
+static void render_tank(const Tank *const tank, size_t i) {
     if (tank->alive) {
-        // Draw the tank at its current position
-        mvaddch(tank->y, tank->x, 'T');
+        struct sprite tank_sprite;
+        sprite_repo_get(&ships_repo, &tank_sprite, i);
+
+        float rotation = 0.0f;
+        switch (tank->direction) {
+            case DOWN:
+                rotation = 180.0f;
+                break;
+            case LEFT:
+                rotation = 270.0f;
+                break;
+            case RIGHT:
+                rotation = 90.0f;
+                break;
+            default:
+                break;
+        }
+
+        sprite_render_rotated(&tank_sprite, (float)tank->x, (float)tank->y,
+                              rotation);
     }
 }
 
 static void render_bullet(const Bullet *const bullet) {
     if (bullet->active) {
         // Draw the bullet at its current position
-        mvaddch(bullet->y, bullet->x, 'o');
+        struct sprite bullet_sprite;
+        sprite_repo_get(&bullets_repo, &bullet_sprite, 0);
+
+        float rotation = 0.0f;
+        switch (bullet->direction) {
+            case DOWN:
+                rotation = 90.0f;
+                break;
+            case LEFT:
+                rotation = 180.0f;
+                break;
+            case UP:
+                rotation = 270.0f;
+                break;
+            default:
+                break;
+        }
+        sprite_render_rotated(&bullet_sprite, (float)bullet->x,
+                              (float)bullet->y, rotation);
     }
 }
 
@@ -75,13 +101,13 @@ static void render_power_up(const Game_State *state) {
 
     switch (state->power_up.kind) {
         case HP_PLUS_ONE:
-            mvprintw(state->power_up.y, state->power_up.x, "HP+1");
+            DrawCircle(state->power_up.x, state->power_up.y, 15.0, GREEN);
             break;
         case HP_PLUS_THREE:
-            mvprintw(state->power_up.y, state->power_up.x, "HP+3");
+            DrawCircle(state->power_up.x, state->power_up.y, 15.0, DARKGREEN);
             break;
         case AMMO_PLUS_ONE:
-            mvprintw(state->power_up.y, state->power_up.x, "HP+1");
+            DrawCircle(state->power_up.x, state->power_up.y, 15.0, DARKBLUE);
             break;
         default:
             break;
@@ -90,46 +116,28 @@ static void render_power_up(const Game_State *state) {
 
 static void render_stats(const Game_State *state, size_t index) {
     int bullet_count = game_state_ammo(state, index);
-    mvprintw(0, 0, "HP: %d", state->players[index].hp);
-    mvprintw(1, 0, "AMMO: %d", bullet_count);
+    DrawText(TextFormat("X: %d Y: %d", state->players[index].x,
+                        state->players[index].y),
+             1, 1, 10, DARKBLUE);
+    DrawText(TextFormat("HP: %d", state->players[index].hp), 1, 12, 10,
+             DARKBLUE);
+
+    DrawText(TextFormat("AMMO: %d", bullet_count), 1, 24, 10, DARKBLUE);
 }
 
 static void render_game(const Game_State *state, size_t index) {
-    clear();
+    BeginDrawing();
+    ClearBackground(BLACK);
     for (size_t i = 0; i < MAX_PLAYERS; ++i) {
-        render_tank(&state->players[i]);
+        render_tank(&state->players[i], i);
         for (size_t j = 0; j < MAX_AMMO; ++j)
             render_bullet(&state->players[i].bullet[j]);
     }
 
     render_power_up(state);
-
     render_stats(state, index);
-    refresh();
-}
 
-static unsigned handle_input(void) {
-    unsigned action = IDLE;
-    int ch = getch();
-    switch (ch) {
-        case KEY_UP:
-            action = UP;
-            break;
-        case KEY_DOWN:
-            action = DOWN;
-            break;
-        case KEY_LEFT:
-            action = LEFT;
-            break;
-        case KEY_RIGHT:
-            action = RIGHT;
-            break;
-        case ' ':
-            action = FIRE;
-            break;
-    }
-
-    return action;
+    EndDrawing();
 }
 
 /*
@@ -211,31 +219,66 @@ static void game_loop(void) {
     protocol_deserialize_game_state(buf, &state);
     size_t index = state.player_index;
     unsigned action = IDLE;
-    bool valid_action = false;
     bool is_direction = false;
     bool can_fire = false;
+    float key_cooldown = 0.02f;  // 200 ms between keypresses
+    float last_key_press_time = 0.0f;
 
-    while (1) {
-        action = handle_input();
-        is_direction = (action == UP || action == DOWN || action == LEFT ||
-                        action == RIGHT);
-        can_fire = (action == FIRE && game_state_ammo(&state, index) > 0);
-        valid_action = is_direction || can_fire;
-        if (valid_action) {
-            memset(buf, 0x00, sizeof(buf));
-            n = protocol_serialize_action(action, buf);
-            client_send_data(sockfd, buf, n);
+    while (!WindowShouldClose()) {
+        float current_time = GetTime();
+        if (current_time - last_key_press_time > key_cooldown) {
+            action = IDLE;
+            if (IsKeyDown(KEY_RIGHT)) {
+                action = RIGHT;
+                last_key_press_time = current_time;
+            } else if (IsKeyDown(KEY_LEFT)) {
+                action = LEFT;
+                last_key_press_time = current_time;
+            } else if (IsKeyDown(KEY_UP)) {
+                action = UP;
+                last_key_press_time = current_time;
+            } else if (IsKeyDown(KEY_DOWN)) {
+                action = DOWN;
+                last_key_press_time = current_time;
+            }
+            if (IsKeyPressed(KEY_SPACE)) {
+                action = FIRE;
+                last_key_press_time = current_time;
+            }
+
+            is_direction = (action == UP || action == DOWN || action == LEFT ||
+                            action == RIGHT);
+            can_fire = (action == FIRE && game_state_ammo(&state, index) > 0);
+            if (is_direction || can_fire) {
+                memset(buf, 0x00, sizeof(buf));
+                n = protocol_serialize_action(action, buf);
+                client_send_data(sockfd, buf, n);
+            }
         }
         n = client_recv_data(sockfd, buf);
-        protocol_deserialize_game_state(buf, &state);
-        render_game(&state, index);
+        if (n > sizeof(int)) {
+            protocol_deserialize_game_state(buf, &state);
+            render_game(&state, index);
+        }
     }
 }
 
 int main(void) {
-    init_screen();
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT,
+               "raylib [core] example - basic window");
+
+    ships_repo = sprite_repo_new();
+    bullets_repo = sprite_repo_new();
+    sprite_repo_init(&ships_repo, SPACESHIP);
+    sprite_repo_init(&bullets_repo, BULLET);
+    SetTargetFPS(60);
     game_loop();
 
-    endwin();
+    sprite_repo_deinit(&ships_repo);
+    sprite_repo_deinit(&bullets_repo);
+    sprite_repo_free(&ships_repo);
+    sprite_repo_free(&bullets_repo);
+
+    CloseWindow();  // Close window and OpenGL context
     return 0;
 }
