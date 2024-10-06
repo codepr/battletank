@@ -4,13 +4,13 @@
 
 #include "protocol.h"
 
-ssize_t network_send(int fd, const char *buf, size_t count) {
+ssize_t network_send(int fd, const unsigned char *buf, size_t count) {
     ssize_t n = 0;
     size_t written = 0;
 
     /* Let's reply to the client */
     while (written < count) {
-        n = write(fd, buf + n, count);
+        n = write(fd, buf + written, count);
         if (n == -1) {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
                 break;
@@ -28,11 +28,11 @@ ssize_t network_send(int fd, const char *buf, size_t count) {
  *
  * - Reads the first 4 bytes to determine the total length of the packet.
  * - Reads data in a loop until the entire packet is received or an error
- * occurs.
+ *   occurs.
  * - If a non-blocking socket is used, it will return immediately when no data
- * is available (errno = EAGAIN or EWOULDBLOCK).
+ *   is available (errno = EAGAIN or EWOULDBLOCK).
  */
-ssize_t network_recv(int fd, char *buf) {
+ssize_t network_recv(int fd, unsigned char *buf) {
     int received = 0, count = sizeof(int);
 
     // Read the header length
