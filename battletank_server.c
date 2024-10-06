@@ -48,7 +48,7 @@
 // We don't expect big payloads
 #define BUFSIZE 1024
 #define BACKLOG 128
-#define TIMEOUT 70000
+#define TIMEOUT 26000
 #define POWERUP_COUNTER 70
 
 // Generic global game state
@@ -133,7 +133,7 @@ exit:
     return -1;
 }
 
-static int broadcast(int *client_fds, const char *buf, size_t count) {
+static int broadcast(int *client_fds, const unsigned char *buf, size_t count) {
     int written = 0;
     for (int i = 0; i < FD_SETSIZE; i++) {
         if (client_fds[i] >= 0) {
@@ -145,14 +145,24 @@ static int broadcast(int *client_fds, const char *buf, size_t count) {
     return written;
 }
 
+static unsigned long long get_microseconds_timestamp(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+
+    // Convert the time to microseconds
+    return (unsigned long long)(ts.tv_sec * 1000000 + ts.tv_nsec / 1000);
+}
+
 static void server_loop(int server_fd) {
     fd_set readfds;
     int client_fds[FD_SETSIZE];
     int maxfd = server_fd;
     int i = 0;
-    char buf[BUFSIZE];
+    unsigned char buf[BUFSIZE];
     struct timeval tv = {0, TIMEOUT};
     size_t spawn_counter = 0;
+    unsigned long long current_time_ns = 0, remaining_us = 0,
+                       last_update_time_ns = 0;
 
     // Initialize client_fds array
     for (i = 0; i < FD_SETSIZE; i++) {
@@ -248,10 +258,24 @@ static void server_loop(int server_fd) {
             printw("[info] Generated power up\n");
         }
 
-        // Main update loop here
-        game_state_update(&game_state);
-        size_t bytes = protocol_serialize_game_state(&game_state, buf);
-        broadcast(client_fds, buf, bytes);
+        // Send update to the connected clients, currently with a TIMEOUT of
+        // 16ms is roughly equal to 60 FPS. Checks for the last update sent and
+        // adjust the select timeout so to make it as precise and smooth as
+        // possible and respect the deadline
+        current_time_ns = get_microseconds_timestamp();
+        remaining_us = current_time_ns - last_update_time_ns;
+        if (remaining_us >= TIMEOUT) {
+            // Main update loop here
+            game_state_update(&game_state);
+            size_t bytes = protocol_serialize_game_state(&game_state, buf);
+            broadcast(client_fds, buf, bytes);
+            last_update_time_ns = get_microseconds_timestamp();
+            tv.tv_sec = 0;
+            tv.tv_usec = TIMEOUT;
+        } else {
+            tv.tv_sec = 0;
+            tv.tv_usec = TIMEOUT - remaining_us;
+        }
         // We're using ncurses for convienince to initialise ROWS and LINES
         // without going raw mode in the terminal, this requires a refresh to
         // print the logs

@@ -177,7 +177,8 @@ static int client_connect(const char *host, int port) {
     return socket_connect(host, port);
 }
 
-static int client_send_data(int sockfd, const char *data, size_t datasize) {
+static int client_send_data(int sockfd, const unsigned char *data,
+                            size_t datasize) {
     ssize_t n = network_send(sockfd, data, datasize);
     if (n < 0) {
         perror("write() error");
@@ -187,7 +188,7 @@ static int client_send_data(int sockfd, const char *data, size_t datasize) {
     return n;
 }
 
-static int client_recv_data(int sockfd, char *data) {
+static int client_recv_data(int sockfd, unsigned char *data) {
     ssize_t n = network_recv(sockfd, data);
     if (n < 0) {
         perror("read() error");
@@ -204,7 +205,7 @@ static void game_loop(void) {
     if (sockfd < 0) exit(EXIT_FAILURE);
     Game_State state;
     game_state_init(&state);
-    char buf[BUFSIZE];
+    unsigned char buf[BUFSIZE];
     // Sync the game state for the first time
     int n = client_recv_data(sockfd, buf);
     protocol_deserialize_game_state(buf, &state);
