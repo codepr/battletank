@@ -1,6 +1,6 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g -ggdb -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -pg
-LDFLAGS = -lncurses
+CFLAGS = -Wall -Wextra -g -ggdb -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -pg -I./raylib/ -framework CoreVideo -framework IOKit -framework Cocoa -framework GLUT -framework OpenGL
+LDFLAGS = -L./raylib/ -lraylib
 
 SRC = $(filter-out battletank_server.c, $(wildcard *.c))
 OBJ = $(SRC:.c=.o)
