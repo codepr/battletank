@@ -34,8 +34,8 @@ void game_state_spawn_tank(Game_State *state, size_t index) {
     if (!state->players[index].alive) {
         state->players[index].alive = true;
         state->players[index].hp = BASE_HP;
-        state->players[index].x = RANDOM(15, 25);
-        state->players[index].y = RANDOM(15, 25);
+        state->players[index].x = RANDOM(15, SCREEN_WIDTH);
+        state->players[index].y = RANDOM(15, SCREEN_HEIGHT);
         state->players[index].direction = IDLE;
         state->active_players++;
     }
@@ -69,19 +69,19 @@ void game_state_update_tank(Game_State *state, size_t tank_index,
                             unsigned action) {
     switch (action) {
         case UP:
-            state->players[tank_index].y -= 2;
+            state->players[tank_index].y -= 3;
             state->players[tank_index].direction = UP;
             break;
         case DOWN:
-            state->players[tank_index].y += 2;
+            state->players[tank_index].y += 3;
             state->players[tank_index].direction = DOWN;
             break;
         case LEFT:
-            state->players[tank_index].x -= 2;
+            state->players[tank_index].x -= 3;
             state->players[tank_index].direction = LEFT;
             break;
         case RIGHT:
-            state->players[tank_index].x += 2;
+            state->players[tank_index].x += 3;
             state->players[tank_index].direction = RIGHT;
             break;
         case FIRE:
@@ -168,7 +168,7 @@ static void check_collision(Tank *tank, Bullet *bullet) {
  * - For each player:
  *   - Updates their bullet by calling `update_bullet`.
  *   - Checks for collisions between the player's tank and every other player's
- * bullet using `check_collision`.
+ *     bullet using `check_collision`.
  * - Skips collision checks between a player and their own bullet.
  */
 void game_state_update(Game_State *state) {

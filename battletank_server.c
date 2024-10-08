@@ -45,10 +45,10 @@
 #include "protocol.h"
 
 // We don't expect big payloads
-#define BUFSIZE 1024
+#define BUFSIZE 2048
 #define BACKLOG 128
-#define TIMEOUT 26000
-#define POWERUP_COUNTER 70
+#define TIMEOUT 16000  // ~60 FPS
+#define POWERUP_COUNTER 270
 
 // Generic global game state
 static Game_State game_state = {0};
@@ -160,7 +160,7 @@ static void server_loop(int server_fd) {
     unsigned char buf[BUFSIZE];
     struct timeval tv = {0, TIMEOUT};
     size_t spawn_counter = 0;
-    unsigned long long current_time_ns = 0, remaining_us = 0,
+    unsigned long long current_time_ns = 0, remaining_ns = 0,
                        last_update_time_ns = 0;
 
     // Initialize client_fds array
@@ -229,6 +229,15 @@ static void server_loop(int server_fd) {
             game_state_spawn_tank(&game_state, game_state.player_index);
             printf("[INFO] Tank for player-%ld spawned\n",
                    game_state.player_index);
+
+            // Send the game state
+            ssize_t bytes = protocol_serialize_game_state(&game_state, buf);
+            bytes = network_send(client_fd, buf, bytes);
+            if (bytes < 0) {
+                perror("network_send() error");
+                continue;
+            }
+            printf("[INFO] Game state sync completed (%ld bytes)\n", bytes);
         }
 
         for (i = 0; i < FD_SETSIZE; i++) {
@@ -264,8 +273,8 @@ static void server_loop(int server_fd) {
         // adjust the select timeout so to make it as precise and smooth as
         // possible and respect the deadline
         current_time_ns = get_microseconds_timestamp();
-        remaining_us = current_time_ns - last_update_time_ns;
-        if (remaining_us >= TIMEOUT) {
+        remaining_ns = current_time_ns - last_update_time_ns;
+        if (remaining_ns >= TIMEOUT) {
             // Main update loop here
             game_state_update(&game_state);
             size_t bytes = protocol_serialize_game_state(&game_state, buf);
@@ -275,7 +284,7 @@ static void server_loop(int server_fd) {
             tv.tv_usec = TIMEOUT;
         } else {
             tv.tv_sec = 0;
-            tv.tv_usec = TIMEOUT - remaining_us;
+            tv.tv_usec = TIMEOUT - remaining_ns;
         }
     }
 }

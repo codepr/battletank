@@ -27,11 +27,11 @@ In no particular order, and not necessarily mandatory:
     - Ensure screen size scaling is maintained in sync with players
 ### Future improvements
 - Walls
-- Life points
-- Bullets count
+- Life points ✅
+- Bullets count ✅
 - Recharge bullets on a time basis
-- Power ups (faster bullets? larger hit box? Mines? they could appear 1-2px before stepping on them)
-- Explore SDL2 or Raylib for some graphic or sprites
+- Power ups (faster bullets? larger hit box? Mines? they could appear 1-2px before stepping on them) ✅
+- Explore SDL2 or Raylib for some graphic or sprites ✅
 
 ## Main challenges
 
