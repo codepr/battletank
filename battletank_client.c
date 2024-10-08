@@ -36,9 +36,9 @@
 #include "raylib.h"
 #include "sprite.h"
 
-#define BUFSIZE 1024
-Spaceship_Repo ships_repo;
-Bullet_Repo bullets_repo;
+#define BUFSIZE 2048
+
+Sprite_Repo sprite_repo;
 
 /*
  * RENDERING HELPERS
@@ -49,7 +49,7 @@ Bullet_Repo bullets_repo;
 static void render_tank(const Tank *const tank, size_t i) {
     if (tank->alive) {
         struct sprite tank_sprite;
-        sprite_repo_get(&ships_repo, &tank_sprite, i);
+        sprite_repo_get(&sprite_repo, &tank_sprite, SPACESHIP, i);
 
         float rotation = 0.0f;
         switch (tank->direction) {
@@ -73,9 +73,14 @@ static void render_tank(const Tank *const tank, size_t i) {
 
 static void render_bullet(const Bullet *const bullet) {
     if (bullet->active) {
-        // Draw the bullet at its current position
+        // Draw the bullet at its current position, to do it
+        // we first load the texture from the repository
+        // TODO although the operation is pretty inexpensive as at this
+        // point it's just a lookup O(1) in an arraya we can probably
+        // attach the sprite directly to the tank and avoid this lookup
+        // altogether
         struct sprite bullet_sprite;
-        sprite_repo_get(&bullets_repo, &bullet_sprite, 0);
+        sprite_repo_get(&sprite_repo, &bullet_sprite, BULLET, 0);
 
         float rotation = 0.0f;
         switch (bullet->direction) {
@@ -99,15 +104,21 @@ static void render_bullet(const Bullet *const bullet) {
 static void render_power_up(const Game_State *state) {
     if (state->power_up.kind == NONE) return;
 
+    struct sprite powerup_sprite;
+    sprite_repo_get(&sprite_repo, &powerup_sprite, POWERUP, 0);
+
     switch (state->power_up.kind) {
         case HP_PLUS_ONE:
-            DrawCircle(state->power_up.x, state->power_up.y, 15.0, GREEN);
+            sprite_render(&powerup_sprite, state->power_up.x, state->power_up.y,
+                          YELLOW);
             break;
         case HP_PLUS_THREE:
-            DrawCircle(state->power_up.x, state->power_up.y, 15.0, DARKGREEN);
+            sprite_render(&powerup_sprite, state->power_up.x, state->power_up.y,
+                          DARKGREEN);
             break;
         case AMMO_PLUS_ONE:
-            DrawCircle(state->power_up.x, state->power_up.y, 15.0, DARKBLUE);
+            sprite_render(&powerup_sprite, state->power_up.x, state->power_up.y,
+                          DARKBLUE);
             break;
         default:
             break;
@@ -256,6 +267,8 @@ static void game_loop(void) {
             }
         }
         n = client_recv_data(sockfd, buf);
+        // render the battlefield and the tanks only when some payload is
+        // actually received
         if (n > sizeof(int)) {
             protocol_deserialize_game_state(buf, &state);
             render_game(&state, index);
@@ -265,19 +278,14 @@ static void game_loop(void) {
 
 int main(void) {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT,
-               "raylib [core] example - basic window");
+               "raylib battletank (or spacebattle)");
 
-    ships_repo = sprite_repo_new();
-    bullets_repo = sprite_repo_new();
-    sprite_repo_init(&ships_repo, SPACESHIP);
-    sprite_repo_init(&bullets_repo, BULLET);
-    SetTargetFPS(60);
+    sprite_repo_load(&sprite_repo);
+
+    SetTargetFPS(120);
     game_loop();
 
-    sprite_repo_deinit(&ships_repo);
-    sprite_repo_deinit(&bullets_repo);
-    sprite_repo_free(&ships_repo);
-    sprite_repo_free(&bullets_repo);
+    sprite_repo_free(&sprite_repo);
 
     CloseWindow();  // Close window and OpenGL context
     return 0;

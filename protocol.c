@@ -109,24 +109,28 @@ static int protocol_deserialize_tank(const unsigned char *buf, Tank *tank) {
  *
  * Header
  * ------
- * bytes (1-4):    total packet length (38 bytes)
- * bytes (5-9):    player index
- * bytes (10-14):  players count
+ * bytes (1-4)     total packet length (54 bytes)
+ * bytes (5-9)     player index
+ * bytes (10-14)   active players count
+ * bytes (15-19)   active power-up x
+ * bytes (20-24)   active power-up y
+ * bytes (25)      power-up kind
  *
  * State (suppose 1 tank)
  * -----
  * For each player (e.g. <players count> players)
- * bytes (15-19)   x
- * bytes (20-24)   y
- * bytes (25)      alive
- * bytes (26)      direction
+ * bytes (26-30)   x
+ * bytes (31-35)   y
+ * bytes (36-40)   hp
+ * bytes (41)      alive
+ * bytes (42)      direction
  *
  * Bullet
  * ------
- * bytes (27-31)   x
- * bytes (32-36)   y
- * bytes (37)      active
- * bytes (38)      direction
+ * bytes (43-47)   x
+ * bytes (48-52)   y
+ * bytes (53)      active
+ * bytes (54)      direction
  */
 int protocol_serialize_game_state(const Game_State *state, unsigned char *buf) {
     // Serialize the game state header
