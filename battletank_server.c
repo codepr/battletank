@@ -160,7 +160,7 @@ static void server_loop(int server_fd) {
     unsigned char buf[BUFSIZE];
     struct timeval tv = {0, TIMEOUT};
     size_t spawn_counter = 0;
-    unsigned long long current_time_ns = 0, remaining_ns = 0,
+    unsigned long long current_time_ns = 0, remaining_us = 0,
                        last_update_time_ns = 0;
 
     // Initialize client_fds array
@@ -273,8 +273,8 @@ static void server_loop(int server_fd) {
         // adjust the select timeout so to make it as precise and smooth as
         // possible and respect the deadline
         current_time_ns = get_microseconds_timestamp();
-        remaining_ns = current_time_ns - last_update_time_ns;
-        if (remaining_ns >= TIMEOUT) {
+        remaining_us = current_time_ns - last_update_time_ns;
+        if (remaining_us >= TIMEOUT) {
             // Main update loop here
             game_state_update(&game_state);
             size_t bytes = protocol_serialize_game_state(&game_state, buf);
@@ -284,7 +284,7 @@ static void server_loop(int server_fd) {
             tv.tv_usec = TIMEOUT;
         } else {
             tv.tv_sec = 0;
-            tv.tv_usec = TIMEOUT - remaining_ns;
+            tv.tv_usec = TIMEOUT - remaining_us;
         }
     }
 }

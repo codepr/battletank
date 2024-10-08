@@ -269,7 +269,7 @@ static void game_loop(void) {
         n = client_recv_data(sockfd, buf);
         // render the battlefield and the tanks only when some payload is
         // actually received
-        if (n > sizeof(int)) {
+        if (n > (int)sizeof(int)) {
             protocol_deserialize_game_state(buf, &state);
             render_game(&state, index);
         }

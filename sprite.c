@@ -83,7 +83,7 @@ int sprite_collection_load(Sprite_Collection *collection, Sprite_Kind kind) {
     if (stat(pathbuf, &st) != 0) return -1;
 
     struct dirent **namelist;
-    int err = 0, ok = 0;
+    int err = 0;
     n = scandir(pathbuf, &namelist, NULL, alphasort);
     if (n == -1) {
         err = -1;
