@@ -4,11 +4,11 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define MAX_AMMO 5
-#define MAX_PLAYERS 5
-#define BASE_HP 3
+#define MAX_AMMO      5
+#define MAX_PLAYERS   5
+#define BASE_HP       3
 
-#define SCREEN_WIDTH 800
+#define SCREEN_WIDTH  800
 #define SCREEN_HEIGHT 600
 
 // Possible directions a tank or bullet can move.

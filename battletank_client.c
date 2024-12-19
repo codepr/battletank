@@ -46,7 +46,8 @@ Sprite_Repo sprite_repo;
  * For the time being this represents the sole "graphic" layer, it's so small
  * it can comfortably live embedded in the client module.
  */
-static void render_tank(const Tank *const tank, size_t i) {
+static void render_tank(const Tank *const tank, size_t i)
+{
     if (tank->alive) {
         struct sprite tank_sprite;
         sprite_repo_get(&sprite_repo, &tank_sprite, SPACESHIP, i);
@@ -71,7 +72,8 @@ static void render_tank(const Tank *const tank, size_t i) {
     }
 }
 
-static void render_bullet(const Bullet *const bullet) {
+static void render_bullet(const Bullet *const bullet)
+{
     if (bullet->active) {
         // Draw the bullet at its current position, to do it
         // we first load the texture from the repository
@@ -101,7 +103,8 @@ static void render_bullet(const Bullet *const bullet) {
     }
 }
 
-static void render_power_up(const Game_State *state) {
+static void render_power_up(const Game_State *state)
+{
     if (state->power_up.kind == NONE) return;
 
     struct sprite powerup_sprite;
@@ -125,7 +128,8 @@ static void render_power_up(const Game_State *state) {
     }
 }
 
-static void render_stats(const Game_State *state, size_t index) {
+static void render_stats(const Game_State *state, size_t index)
+{
     int bullet_count = game_state_ammo(state, index);
     DrawText(TextFormat("X: %d Y: %d", state->players[index].x,
                         state->players[index].y),
@@ -136,10 +140,11 @@ static void render_stats(const Game_State *state, size_t index) {
     DrawText(TextFormat("AMMO: %d", bullet_count), 1, 24, 10, DARKBLUE);
 }
 
-static void render_game(const Game_State *state, size_t index) {
+static void render_game(const Game_State *state, size_t index)
+{
     BeginDrawing();
     ClearBackground(BLACK);
-    for (size_t i = 0; i < MAX_PLAYERS; ++i) {
+    for (size_t i = 0; i < state->active_players; ++i) {
         render_tank(&state->players[i], i);
         for (size_t j = 0; j < MAX_AMMO; ++j)
             render_bullet(&state->players[i].bullet[j]);
@@ -156,13 +161,14 @@ static void render_game(const Game_State *state, size_t index) {
  * ===============
  * Just some connection and read/write throught the wire helpers
  */
-static int socket_connect(const char *host, int port) {
+static int socket_connect(const char *host, int port)
+{
     struct sockaddr_in serveraddr;
     struct hostent *server;
     struct timeval tv = {0, 10000};
 
     // socket: create the socket
-    int sfd = socket(AF_INET, SOCK_STREAM, 0);
+    int sfd           = socket(AF_INET, SOCK_STREAM, 0);
     if (sfd < 0) goto err;
 
     setsockopt(sfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval));
@@ -192,12 +198,14 @@ err:
     return -1;
 }
 
-static int client_connect(const char *host, int port) {
+static int client_connect(const char *host, int port)
+{
     return socket_connect(host, port);
 }
 
 static int client_send_data(int sockfd, const unsigned char *data,
-                            size_t datasize) {
+                            size_t datasize)
+{
     ssize_t n = network_send(sockfd, data, datasize);
     if (n < 0) {
         perror("write() error");
@@ -207,7 +215,8 @@ static int client_send_data(int sockfd, const unsigned char *data,
     return n;
 }
 
-static int client_recv_data(int sockfd, unsigned char *data) {
+static int client_recv_data(int sockfd, unsigned char *data)
+{
     ssize_t n = network_recv(sockfd, data);
     if (n < 0) {
         perror("read() error");
@@ -219,7 +228,8 @@ static int client_recv_data(int sockfd, unsigned char *data) {
 
 // Main game loop, capture input from the player and communicate with the game
 // server
-static void game_loop(void) {
+static void game_loop(void)
+{
     int sockfd = client_connect("127.0.0.1", 6699);
     if (sockfd < 0) exit(EXIT_FAILURE);
     Game_State state;
@@ -228,11 +238,11 @@ static void game_loop(void) {
     // Sync the game state for the first time
     int n = client_recv_data(sockfd, buf);
     protocol_deserialize_game_state(buf, &state);
-    size_t index = state.player_index;
-    unsigned action = IDLE;
-    bool is_direction = false;
-    bool can_fire = false;
-    float key_cooldown = 0.02f;  // 200 ms between keypresses
+    size_t index              = state.player_index;
+    unsigned action           = IDLE;
+    bool is_direction         = false;
+    bool can_fire             = false;
+    float key_cooldown        = 0.02f;  // 200 ms between keypresses
     float last_key_press_time = 0.0f;
 
     while (!WindowShouldClose()) {
@@ -240,20 +250,20 @@ static void game_loop(void) {
         if (current_time - last_key_press_time > key_cooldown) {
             action = IDLE;
             if (IsKeyDown(KEY_RIGHT)) {
-                action = RIGHT;
+                action              = RIGHT;
                 last_key_press_time = current_time;
             } else if (IsKeyDown(KEY_LEFT)) {
-                action = LEFT;
+                action              = LEFT;
                 last_key_press_time = current_time;
             } else if (IsKeyDown(KEY_UP)) {
-                action = UP;
+                action              = UP;
                 last_key_press_time = current_time;
             } else if (IsKeyDown(KEY_DOWN)) {
-                action = DOWN;
+                action              = DOWN;
                 last_key_press_time = current_time;
             }
             if (IsKeyPressed(KEY_SPACE)) {
-                action = FIRE;
+                action              = FIRE;
                 last_key_press_time = current_time;
             }
 
@@ -276,7 +286,8 @@ static void game_loop(void) {
     }
 }
 
-int main(void) {
+int main(void)
+{
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT,
                "raylib battletank (or spacebattle)");
 

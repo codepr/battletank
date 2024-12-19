@@ -6,17 +6,19 @@
  */
 #include "protocol.h"
 
-#define SIZEOF_TANK sizeof(int) * 3 + sizeof(unsigned char) * 2
+#define SIZEOF_TANK   sizeof(int) * 3 + sizeof(unsigned char) * 2
 #define SIZEOF_BULLET sizeof(int) * 2 + sizeof(unsigned char) * 2
 
-void bin_write_i32(unsigned char *buf, unsigned long val) {
+void bin_write_i32(unsigned char *buf, unsigned long val)
+{
     *buf++ = val >> 24;
     *buf++ = val >> 16;
     *buf++ = val >> 8;
     *buf++ = val;
 }
 
-long int bin_read_i32(const unsigned char *buf) {
+long int bin_read_i32(const unsigned char *buf)
+{
     unsigned long i2 = ((unsigned long int)buf[0] << 24) |
                        ((unsigned long int)buf[1] << 16) |
                        ((unsigned long int)buf[2] << 8) | buf[3];
@@ -31,7 +33,8 @@ long int bin_read_i32(const unsigned char *buf) {
     return val;
 }
 
-static int protocol_serialize_bullet(const Bullet *bullet, unsigned char *buf) {
+static int protocol_serialize_bullet(const Bullet *bullet, unsigned char *buf)
+{
     bin_write_i32(buf, bullet->x);
     buf += sizeof(int);
 
@@ -44,7 +47,8 @@ static int protocol_serialize_bullet(const Bullet *bullet, unsigned char *buf) {
     return SIZEOF_BULLET;
 }
 
-static int protocol_serialize_tank(const Tank *tank, unsigned char *buf) {
+static int protocol_serialize_tank(const Tank *tank, unsigned char *buf)
+{
     // Serialize the tank
     bin_write_i32(buf, tank->x);
     buf += sizeof(int);
@@ -55,8 +59,8 @@ static int protocol_serialize_tank(const Tank *tank, unsigned char *buf) {
     bin_write_i32(buf, tank->hp);
     buf += sizeof(int);
 
-    *buf++ = tank->alive;
-    *buf++ = tank->direction;
+    *buf++     = tank->alive;
+    *buf++     = tank->direction;
 
     // Serialize the bullet
     int offset = 0;
@@ -66,21 +70,22 @@ static int protocol_serialize_tank(const Tank *tank, unsigned char *buf) {
     return offset + SIZEOF_TANK;
 }
 
-static int protocol_deserialize_bullet(const unsigned char *buf,
-                                       Bullet *bullet) {
+static int protocol_deserialize_bullet(const unsigned char *buf, Bullet *bullet)
+{
     bullet->x = bin_read_i32(buf);
     buf += sizeof(int);
 
     bullet->y = bin_read_i32(buf);
     buf += sizeof(int);
 
-    bullet->active = *buf++;
+    bullet->active    = *buf++;
     bullet->direction = *buf++;
 
     return SIZEOF_BULLET;
 }
 
-static int protocol_deserialize_tank(const unsigned char *buf, Tank *tank) {
+static int protocol_deserialize_tank(const unsigned char *buf, Tank *tank)
+{
     tank->x = bin_read_i32(buf);
     buf += sizeof(int);
 
@@ -90,10 +95,10 @@ static int protocol_deserialize_tank(const unsigned char *buf, Tank *tank) {
     tank->hp = bin_read_i32(buf);
     buf += sizeof(int);
 
-    tank->alive = *buf++;
+    tank->alive     = *buf++;
     tank->direction = *buf++;
 
-    int offset = 0;
+    int offset      = 0;
     for (int i = 0; i < MAX_AMMO; ++i)
         offset += protocol_deserialize_bullet(buf + offset, &tank->bullet[i]);
 
@@ -132,7 +137,8 @@ static int protocol_deserialize_tank(const unsigned char *buf, Tank *tank) {
  * bytes (53)      active
  * bytes (54)      direction
  */
-int protocol_serialize_game_state(const Game_State *state, unsigned char *buf) {
+int protocol_serialize_game_state(const Game_State *state, unsigned char *buf)
+{
     // Serialize the game state header
     int active_players = state->active_players;
     // Total length will include itself in the full length of the packet
@@ -169,8 +175,8 @@ int protocol_serialize_game_state(const Game_State *state, unsigned char *buf) {
     return offset;
 }
 
-int protocol_deserialize_game_state(const unsigned char *buf,
-                                    Game_State *state) {
+int protocol_deserialize_game_state(const unsigned char *buf, Game_State *state)
+{
     // Deserialize the game state header
     int total_length = bin_read_i32(buf);
     buf += sizeof(int);
@@ -189,7 +195,7 @@ int protocol_deserialize_game_state(const unsigned char *buf,
 
     state->power_up.kind = *buf++;
 
-    int offset = 0;
+    int offset           = 0;
 
     // Deserialize the players
     for (size_t i = 0; i < MAX_PLAYERS; ++i) {
@@ -199,18 +205,20 @@ int protocol_deserialize_game_state(const unsigned char *buf,
     return total_length;
 }
 
-int protocol_serialize_action(unsigned action, unsigned char *buf) {
+int protocol_serialize_action(unsigned action, unsigned char *buf)
+{
     // Total length will include itself in the full length of the packet
     int total_length = sizeof(int) + sizeof(unsigned char);
 
     bin_write_i32(buf, total_length);
-    int offset = sizeof(int);
+    int offset      = sizeof(int);
 
     *(buf + offset) = action;
     return total_length;
 }
 
-int protocol_deserialize_action(const unsigned char *buf, unsigned *action) {
+int protocol_deserialize_action(const unsigned char *buf, unsigned *action)
+{
     int total_length = bin_read_i32(buf);
     buf += sizeof(int);
 

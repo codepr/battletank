@@ -45,16 +45,17 @@
 #include "protocol.h"
 
 // We don't expect big payloads
-#define BUFSIZE 2048
-#define BACKLOG 128
-#define TIMEOUT 16000  // ~60 FPS
+#define BUFSIZE         2048
+#define BACKLOG         128
+#define TIMEOUT         16000  // ~60 FPS
 #define POWERUP_COUNTER 270
 
 // Generic global game state
 static Game_State game_state = {0};
 
 /* Set non-blocking socket */
-static int set_nonblocking(int fd) {
+static int set_nonblocking(int fd)
+{
     int flags, result;
     flags = fcntl(fd, F_GETFL, 0);
 
@@ -71,11 +72,12 @@ err:
     return -1;
 }
 
-static int server_listen(const char *host, int port, int backlog) {
-    int listen_fd = -1;
-    const struct addrinfo hints = {.ai_family = AF_UNSPEC,
+static int server_listen(const char *host, int port, int backlog)
+{
+    int listen_fd               = -1;
+    const struct addrinfo hints = {.ai_family   = AF_UNSPEC,
                                    .ai_socktype = SOCK_STREAM,
-                                   .ai_flags = AI_PASSIVE};
+                                   .ai_flags    = AI_PASSIVE};
     struct addrinfo *result, *rp;
     char port_str[6];
 
@@ -116,13 +118,14 @@ err:
     return -1;
 }
 
-static int server_accept(int server_fd) {
+static int server_accept(int server_fd)
+{
     int fd;
     struct sockaddr_in addr;
     socklen_t addrlen = sizeof(addr);
 
     /* Let's accept on listening socket */
-    fd = accept(server_fd, (struct sockaddr *)&addr, &addrlen);
+    fd                = accept(server_fd, (struct sockaddr *)&addr, &addrlen);
     if (fd <= 0) goto exit;
 
     (void)set_nonblocking(fd);
@@ -132,7 +135,8 @@ exit:
     return -1;
 }
 
-static int broadcast(int *client_fds, const unsigned char *buf, size_t count) {
+static int broadcast(int *client_fds, const unsigned char *buf, size_t count)
+{
     int written = 0;
     for (int i = 0; i < FD_SETSIZE; i++) {
         if (client_fds[i] >= 0) {
@@ -144,7 +148,8 @@ static int broadcast(int *client_fds, const unsigned char *buf, size_t count) {
     return written;
 }
 
-static unsigned long long get_microseconds_timestamp(void) {
+static unsigned long long get_microseconds_timestamp(void)
+{
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
 
@@ -152,14 +157,15 @@ static unsigned long long get_microseconds_timestamp(void) {
     return (unsigned long long)(ts.tv_sec * 1000000 + ts.tv_nsec / 1000);
 }
 
-static void server_loop(int server_fd) {
+static void server_loop(int server_fd)
+{
     fd_set readfds;
     int client_fds[FD_SETSIZE];
     int maxfd = server_fd;
-    int i = 0;
+    int i     = 0;
     unsigned char buf[BUFSIZE];
-    struct timeval tv = {0, TIMEOUT};
-    size_t spawn_counter = 0;
+    struct timeval tv                  = {0, TIMEOUT};
+    size_t spawn_counter               = 0;
     unsigned long long current_time_ns = 0, remaining_us = 0,
                        last_update_time_ns = 0;
 
@@ -207,7 +213,7 @@ static void server_loop(int server_fd) {
                         i = FD_SETSIZE;
                         break;
                     }
-                    client_fds[i] = client_fd;
+                    client_fds[i]           = client_fd;
                     game_state.player_index = i;
                     break;
                 }
@@ -232,7 +238,7 @@ static void server_loop(int server_fd) {
 
             // Send the game state
             ssize_t bytes = protocol_serialize_game_state(&game_state, buf);
-            bytes = network_send(client_fd, buf, bytes);
+            bytes         = network_send(client_fd, buf, bytes);
             if (bytes < 0) {
                 perror("network_send() error");
                 continue;
@@ -273,23 +279,24 @@ static void server_loop(int server_fd) {
         // adjust the select timeout so to make it as precise and smooth as
         // possible and respect the deadline
         current_time_ns = get_microseconds_timestamp();
-        remaining_us = current_time_ns - last_update_time_ns;
+        remaining_us    = current_time_ns - last_update_time_ns;
         if (remaining_us >= TIMEOUT) {
             // Main update loop here
             game_state_update(&game_state);
             size_t bytes = protocol_serialize_game_state(&game_state, buf);
             broadcast(client_fds, buf, bytes);
             last_update_time_ns = get_microseconds_timestamp();
-            tv.tv_sec = 0;
-            tv.tv_usec = TIMEOUT;
+            tv.tv_sec           = 0;
+            tv.tv_usec          = TIMEOUT;
         } else {
-            tv.tv_sec = 0;
+            tv.tv_sec  = 0;
             tv.tv_usec = TIMEOUT - remaining_us;
         }
     }
 }
 
-int main(void) {
+int main(void)
+{
     srand(time(NULL));
 
     printf("[INFO] Starting server\n");

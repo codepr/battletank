@@ -5,11 +5,11 @@
 
 #include "raylib.h"
 
-#define ASSETS_PATH "./assets"
-#define TEXTURE_PATH_SIZE 192
+#define ASSETS_PATH           "./assets"
+#define TEXTURE_PATH_SIZE     192
 #define SPRITE_SPACESHIP_PATH "spaceships"
-#define SPRITE_BULLET_PATH "bullets"
-#define SPRITE_POWERUP_PATH "powerups"
+#define SPRITE_BULLET_PATH    "bullets"
+#define SPRITE_POWERUP_PATH   "powerups"
 
 typedef enum { SPACESHIP, BULLET, POWERUP, SPRITES_COUNT } Sprite_Kind;
 

@@ -9,9 +9,10 @@
 
 #include "raylib.h"
 
-static float scalings[SPRITES_COUNT] = {0.08f, 0.06f, 0.12f};
+static float scalings[SPRITES_COUNT] = {0.12f, 0.06f, 0.12f};
 
-struct sprite sprite_load(const char *path, Sprite_Kind kind, float scaling) {
+struct sprite sprite_load(const char *path, Sprite_Kind kind, float scaling)
+{
     struct sprite sprite;
     const char *subpath = kind == SPACESHIP ? SPRITE_SPACESHIP_PATH
                           : kind == POWERUP ? SPRITE_POWERUP_PATH
@@ -20,14 +21,15 @@ struct sprite sprite_load(const char *path, Sprite_Kind kind, float scaling) {
                      subpath, path);
     if (n < 0) fprintf(stderr, "snprintf encoding failure\n");
 
-    sprite.kind = kind;
+    sprite.kind    = kind;
     sprite.scaling = scaling;
     sprite.texture = LoadTexture(sprite.path);
 
     return sprite;
 }
 
-void sprite_render(const struct sprite *sprite, float x, float y, Color tint) {
+void sprite_render(const struct sprite *sprite, float x, float y, Color tint)
+{
     Vector2 position = {(int)x, (int)y};
     DrawTextureEx(sprite->texture, position, 0.0f, sprite->scaling, tint);
 }
@@ -37,7 +39,8 @@ void sprite_render(const struct sprite *sprite, float x, float y, Color tint) {
  * center: Raylib by default rotates textures from the top-left corner.
  */
 void sprite_render_rotated(const struct sprite *sprite, float x, float y,
-                           float rotation) {
+                           float rotation)
+{
     Rectangle src_rec = {0.0f, 0.0f, (float)sprite->texture.width,
                          (float)sprite->texture.height};
 
@@ -53,13 +56,15 @@ void sprite_render_rotated(const struct sprite *sprite, float x, float y,
     DrawTexturePro(sprite->texture, src_rec, dst_rec, origin, rotation, WHITE);
 }
 
-Sprite_Collection sprite_collection_new(void) {
+Sprite_Collection sprite_collection_new(void)
+{
     return (Sprite_Collection){
         .count = 0, .capacity = 4, .sprites = calloc(4, sizeof(struct sprite))};
 }
 
 static void sprite_collection_add(Sprite_Collection *collection,
-                                  struct sprite sprite) {
+                                  struct sprite sprite)
+{
     if (collection->count == collection->capacity - 1) {
         collection->capacity *= 2;
         collection->sprites =
@@ -70,7 +75,8 @@ static void sprite_collection_add(Sprite_Collection *collection,
 }
 
 // Scans the assets directory on the FS for textures
-int sprite_collection_load(Sprite_Collection *collection, Sprite_Kind kind) {
+int sprite_collection_load(Sprite_Collection *collection, Sprite_Kind kind)
+{
     if (kind >= SPRITES_COUNT) return -1;
     char pathbuf[TEXTURE_PATH_SIZE];
     const char *subpath = kind == SPACESHIP ? SPRITE_SPACESHIP_PATH
@@ -84,7 +90,7 @@ int sprite_collection_load(Sprite_Collection *collection, Sprite_Kind kind) {
 
     struct dirent **namelist;
     int err = 0;
-    n = scandir(pathbuf, &namelist, NULL, alphasort);
+    n       = scandir(pathbuf, &namelist, NULL, alphasort);
     if (n == -1) {
         err = -1;
         goto exit;
@@ -110,24 +116,28 @@ exit:
     return err;
 }
 
-void sprite_collection_unload(Sprite_Collection *collection) {
+void sprite_collection_unload(Sprite_Collection *collection)
+{
     for (size_t i = 0; i < collection->count; ++i)
         UnloadTexture(collection->sprites[i].texture);
 }
 
-void sprite_collection_free(Sprite_Collection *collection) {
+void sprite_collection_free(Sprite_Collection *collection)
+{
     free(collection->sprites);
 }
 
 int sprite_collection_get(const Sprite_Collection *collection,
-                          struct sprite *sprite, size_t i) {
+                          struct sprite *sprite, size_t i)
+{
     if (i >= collection->capacity) return -1;
 
     *sprite = collection->sprites[i];
     return 0;
 }
 
-void sprite_repo_load(Sprite_Repo *repo) {
+void sprite_repo_load(Sprite_Repo *repo)
+{
     int err = 0;
     for (Sprite_Kind kind = SPACESHIP; kind < SPRITES_COUNT; ++kind) {
         repo->collections[kind] = sprite_collection_new();
@@ -138,14 +148,16 @@ void sprite_repo_load(Sprite_Repo *repo) {
 }
 
 void sprite_repo_get(const Sprite_Repo *repo, struct sprite *sprite,
-                     Sprite_Kind kind, size_t i) {
+                     Sprite_Kind kind, size_t i)
+{
     int err = sprite_collection_get(&repo->collections[kind], sprite, i);
     if (err < 0)
         fprintf(stderr, "failed to get sprites collection of kind %d - %ld\n",
                 kind, i);
 }
 
-void sprite_repo_free(Sprite_Repo *repo) {
+void sprite_repo_free(Sprite_Repo *repo)
+{
     for (Sprite_Kind kind = SPACESHIP; kind < SPRITES_COUNT; ++kind) {
         sprite_collection_unload(&repo->collections[kind]);
         sprite_collection_free(&repo->collections[kind]);
