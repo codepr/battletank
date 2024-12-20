@@ -36,7 +36,8 @@
 #include "raylib.h"
 #include "sprite.h"
 
-#define BUFSIZE 2048
+#define BUFSIZE        2048
+#define CLIENT_TIMEOUT 10000
 
 Sprite_Repo sprite_repo;
 
@@ -163,37 +164,46 @@ static void render_game(const Game_State *state, size_t index)
  */
 static int socket_connect(const char *host, int port)
 {
-    struct sockaddr_in serveraddr;
-    struct hostent *server;
-    struct timeval tv = {0, 10000};
+    int s, retval = -1;
+    struct addrinfo *servinfo, *p;
+    struct timeval tv           = {0, CLIENT_TIMEOUT};
+    const struct addrinfo hints = {.ai_family   = AF_UNSPEC,
+                                   .ai_socktype = SOCK_STREAM,
+                                   .ai_flags    = AI_PASSIVE};
 
-    // socket: create the socket
-    int sfd           = socket(AF_INET, SOCK_STREAM, 0);
-    if (sfd < 0) goto err;
+    char port_string[6];
+    snprintf(port_string, sizeof(port_string), "%d", port);
 
-    setsockopt(sfd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval));
-    setsockopt(sfd, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(struct timeval));
+    if (getaddrinfo(host, port_string, &hints, &servinfo) != 0) return -1;
 
-    // gethostbyname: get the server's DNS entry
-    server = gethostbyname(host);
-    if (server == NULL) goto err;
+    for (p = servinfo; p != NULL; p = p->ai_next) {
+        /* Try to create the socket and to connect it.
+         * If we fail in the socket() call, or on connect(), we retry with
+         * the next entry in servinfo. */
+        if ((s = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) == -1)
+            continue;
 
-    // build the server's address
-    bzero((char *)&serveraddr, sizeof(serveraddr));
-    serveraddr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, (char *)&serveraddr.sin_addr.s_addr,
-          server->h_length);
-    serveraddr.sin_port = htons(port);
+        setsockopt(s, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(struct timeval));
+        setsockopt(s, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(struct timeval));
 
-    // connect: create a connection with the server
-    if (connect(sfd, (const struct sockaddr *)&serveraddr, sizeof(serveraddr)) <
-        0)
-        goto err;
+        /* Try to connect. */
+        if (connect(s, p->ai_addr, p->ai_addrlen) == -1) {
+            close(s);
+            break;
+        }
 
-    return sfd;
+        /* If we ended an iteration of the for loop without errors, we
+         * have a connected socket. Let's return to the caller. */
+        retval = s;
+        break;
+    }
+
+    freeaddrinfo(servinfo);
+    return retval; /* Will be -1 if no connection succeded. */
 
 err:
 
+    close(s);
     perror("socket(2) opening socket failed");
     return -1;
 }
