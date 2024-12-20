@@ -4,9 +4,12 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-#define MAX_AMMO 5
-#define MAX_PLAYERS 10
-#define BASE_HP 3
+#define MAX_AMMO      5
+#define MAX_PLAYERS   5
+#define BASE_HP       3
+
+#define SCREEN_WIDTH  800
+#define SCREEN_HEIGHT 600
 
 // Possible directions a tank or bullet can move.
 typedef enum { IDLE, UP, DOWN, LEFT, RIGHT } Direction;
@@ -17,6 +20,8 @@ typedef enum {
     FIRE = 5,
 } Action;
 
+// Power-ups are meant to be spawned randomly in the battlefield, whoever
+// steps on one gets the bonus, first arrived first served
 typedef enum { NONE, HP_PLUS_ONE, HP_PLUS_THREE, AMMO_PLUS_ONE } Power_Up;
 
 // Represents a bullet with its position, direction, and status.

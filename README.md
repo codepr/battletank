@@ -1,7 +1,8 @@
 Battletank
 ==========
-Dumb teminal based implementation of the battle tank game, the only dependency
-is `ncurses`
+Simple implementation of a battle arena, testing `raylib`, a C game server based
+on `select`, handling multiple connecting players, use `raylib` for the rendering
+of sprites. WIP.
 
 ## Why
 To have some fun, small old school programs are fun to mess with.
@@ -27,11 +28,11 @@ In no particular order, and not necessarily mandatory:
     - Ensure screen size scaling is maintained in sync with players
 ### Future improvements
 - Walls
-- Life points
-- Bullets count
+- Life points ✅
+- Bullets count ✅
 - Recharge bullets on a time basis
-- Power ups (faster bullets? larger hit box? Mines? they could appear 1-2px before stepping on them)
-- Explore SDL2 or Raylib for some graphic or sprites
+- Power ups (faster bullets? larger hit box? Mines? they could appear 1-2px before stepping on them) ✅
+- Explore SDL2 or Raylib for some graphic or sprites ✅
 
 ## Main challenges
 

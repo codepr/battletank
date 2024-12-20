@@ -1,29 +1,30 @@
 // Game state management, Tank and bullet logics, including collision
 #include "game_state.h"
 
-#include <ncurses.h>
 #include <stdlib.h>
 
 #define RANDOM(min, max) min + rand() / (RAND_MAX / (max - min + 1) + 1)
 
-static void init_bullet(const Tank *tank, Bullet *bullet) {
-    bullet->active = false;
-    bullet->x = tank->x;
-    bullet->y = tank->y;
+static void init_bullet(const Tank *tank, Bullet *bullet)
+{
+    bullet->active    = false;
+    bullet->x         = tank->x;
+    bullet->y         = tank->y;
     bullet->direction = tank->direction;
 }
 
-void game_state_init(Game_State *state) {
+void game_state_init(Game_State *state)
+{
     state->active_players = 0;
-    state->power_up.x = 0;
-    state->power_up.y = 0;
-    state->power_up.kind = NONE;
+    state->power_up.x     = 0;
+    state->power_up.y     = 0;
+    state->power_up.kind  = NONE;
     for (size_t i = 0; i < MAX_PLAYERS; ++i) {
-        state->players[i].x = 0;
-        state->players[i].y = 0;
-        state->players[i].hp = 0;
+        state->players[i].x         = 0;
+        state->players[i].y         = 0;
+        state->players[i].hp        = 0;
         state->players[i].direction = IDLE;
-        state->players[i].alive = false;
+        state->players[i].alive     = false;
         for (size_t j = 0; j < MAX_AMMO; ++j)
             init_bullet(&state->players[i], &state->players[i].bullet[j]);
     }
@@ -31,35 +32,39 @@ void game_state_init(Game_State *state) {
 
 void game_state_free(Game_State *state) { free(state->players); }
 
-void game_state_spawn_tank(Game_State *state, size_t index) {
+void game_state_spawn_tank(Game_State *state, size_t index)
+{
     if (!state->players[index].alive) {
-        state->players[index].alive = true;
-        state->players[index].hp = BASE_HP;
-        state->players[index].x = RANDOM(15, 25);
-        state->players[index].y = RANDOM(15, 25);
+        state->players[index].alive     = true;
+        state->players[index].hp        = BASE_HP;
+        state->players[index].x         = RANDOM(15, SCREEN_WIDTH);
+        state->players[index].y         = RANDOM(15, SCREEN_HEIGHT);
         state->players[index].direction = IDLE;
         state->active_players++;
     }
 }
 
-void game_state_dismiss_tank(Game_State *state, size_t index) {
+void game_state_dismiss_tank(Game_State *state, size_t index)
+{
     state->players[index].alive = false;
-    state->players[index].hp = 0;
+    state->players[index].hp    = 0;
     state->active_players--;
 }
 
-void game_state_generate_power_up(Game_State *state) {
-    state->power_up.x = RANDOM(1, COLS);
-    state->power_up.y = RANDOM(1, LINES);
+void game_state_generate_power_up(Game_State *state)
+{
+    state->power_up.x    = RANDOM(1, SCREEN_WIDTH);
+    state->power_up.y    = RANDOM(1, SCREEN_HEIGHT);
     state->power_up.kind = RANDOM(1, 3);
 }
 
-static void fire_bullet(Tank *tank) {
+static void fire_bullet(Tank *tank)
+{
     for (int i = 0; i < MAX_AMMO; ++i) {
         if (!tank->bullet[i].active) {
-            tank->bullet[i].active = true;
-            tank->bullet[i].x = tank->x;
-            tank->bullet[i].y = tank->y;
+            tank->bullet[i].active    = true;
+            tank->bullet[i].x         = tank->x;
+            tank->bullet[i].y         = tank->y;
             tank->bullet[i].direction = tank->direction;
             break;
         }
@@ -67,22 +72,23 @@ static void fire_bullet(Tank *tank) {
 }
 
 void game_state_update_tank(Game_State *state, size_t tank_index,
-                            unsigned action) {
+                            unsigned action)
+{
     switch (action) {
         case UP:
-            state->players[tank_index].y--;
+            state->players[tank_index].y -= 3;
             state->players[tank_index].direction = UP;
             break;
         case DOWN:
-            state->players[tank_index].y++;
+            state->players[tank_index].y += 3;
             state->players[tank_index].direction = DOWN;
             break;
         case LEFT:
-            state->players[tank_index].x--;
+            state->players[tank_index].x -= 3;
             state->players[tank_index].direction = LEFT;
             break;
         case RIGHT:
-            state->players[tank_index].x++;
+            state->players[tank_index].x += 3;
             state->players[tank_index].direction = RIGHT;
             break;
         case FIRE:
@@ -93,33 +99,35 @@ void game_state_update_tank(Game_State *state, size_t tank_index,
     }
 }
 
-static void update_bullet(Bullet *bullet) {
+static void update_bullet(Bullet *bullet)
+{
     if (!bullet->active) return;
 
     switch (bullet->direction) {
         case UP:
-            bullet->y--;
+            bullet->y -= 6;
             break;
         case DOWN:
-            bullet->y++;
+            bullet->y += 6;
             break;
         case LEFT:
-            bullet->x -= 2;
+            bullet->x -= 8;
             break;
         case RIGHT:
-            bullet->x += 2;
+            bullet->x += 8;
             break;
         default:
             break;
     }
 
-    if (bullet->x < 0 || bullet->x >= COLS || bullet->y < 0 ||
-        bullet->y >= LINES) {
+    if (bullet->x < 0 || bullet->x >= SCREEN_WIDTH || bullet->y < 0 ||
+        bullet->y >= SCREEN_HEIGHT) {
         bullet->active = false;
     }
 }
 
-static void check_power_up(Game_State *state, Tank *tank) {
+static void check_power_up(Game_State *state, Tank *tank)
+{
     if (state->power_up.kind == NONE) return;
 
     switch (state->power_up.kind) {
@@ -151,7 +159,8 @@ static void check_power_up(Game_State *state, Tank *tank) {
     }
 }
 
-static void check_collision(Tank *tank, Bullet *bullet) {
+static void check_collision(Tank *tank, Bullet *bullet)
+{
     if (bullet->active && tank->x == bullet->x && tank->y == bullet->y) {
         tank->hp--;
         if (tank->hp < 0) tank->hp = 0;
@@ -169,10 +178,11 @@ static void check_collision(Tank *tank, Bullet *bullet) {
  * - For each player:
  *   - Updates their bullet by calling `update_bullet`.
  *   - Checks for collisions between the player's tank and every other player's
- * bullet using `check_collision`.
+ *     bullet using `check_collision`.
  * - Skips collision checks between a player and their own bullet.
  */
-void game_state_update(Game_State *state) {
+void game_state_update(Game_State *state)
+{
     Bullet *bullets[MAX_PLAYERS][MAX_AMMO];
     for (size_t i = 0; i < MAX_PLAYERS; ++i) {
         check_power_up(state, &state->players[i]);
@@ -194,7 +204,8 @@ void game_state_update(Game_State *state) {
 
 // TODO make this more efficient by counting the ammo directly in
 // the player state instead of scanning for active
-int game_state_ammo(const Game_State *state, size_t index) {
+int game_state_ammo(const Game_State *state, size_t index)
+{
     int count = 0;
     for (int i = 0; i < MAX_AMMO; ++i) {
         if (!state->players[index].bullet[i].active) count++;
@@ -202,7 +213,8 @@ int game_state_ammo(const Game_State *state, size_t index) {
     return count;
 }
 
-const char *str_action(unsigned action) {
+const char *str_action(unsigned action)
+{
     switch (action) {
         case IDLE:
             return "IDLE";

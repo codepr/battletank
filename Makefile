@@ -1,6 +1,15 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g -ggdb -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -pg
-LDFLAGS = -lncurses
+UNAME := $(shell uname)
+
+ifeq ($(UNAME), Darwin)
+	CFLAGS = -Wall -Wextra -g -ggdb -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -pg -I./raylib/ -framework CoreVideo -framework IOKit -framework Cocoa -framework GLUT -framework OpenGL
+	LDFLAGS = -L./raylib/apple -lraylib
+else ifeq ($(UNAME), Linux)
+	CFLAGS = -Wall -Wextra -g -ggdb -fsanitize=address -fsanitize=undefined -fno-omit-frame-pointer -pg -I./raylib/
+	LDFLAGS = -L./raylib/linux -lraylib -lm
+else
+	$(error Unsupported platform: $(UNAME))
+endif
 
 SRC = $(filter-out battletank_server.c, $(wildcard *.c))
 OBJ = $(SRC:.c=.o)

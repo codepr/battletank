@@ -4,8 +4,9 @@
 
 #include "protocol.h"
 
-ssize_t network_send(int fd, const unsigned char *buf, size_t count) {
-    ssize_t n = 0;
+ssize_t network_send(int fd, const unsigned char *buf, size_t count)
+{
+    ssize_t n      = 0;
     size_t written = 0;
 
     /* Let's reply to the client */
@@ -32,7 +33,8 @@ ssize_t network_send(int fd, const unsigned char *buf, size_t count) {
  * - If a non-blocking socket is used, it will return immediately when no data
  *   is available (errno = EAGAIN or EWOULDBLOCK).
  */
-ssize_t network_recv(int fd, unsigned char *buf) {
+ssize_t network_recv(int fd, unsigned char *buf)
+{
     int received = 0, count = sizeof(int);
 
     // Read the header length
