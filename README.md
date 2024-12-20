@@ -1,7 +1,8 @@
 Battletank
 ==========
-Dumb teminal based implementation of the battle tank game, the only dependency
-is `ncurses`
+Simple implementation of a battle arena, testing `raylib`, a C game server based
+on `select`, handling multiple connecting players, use `raylib` for the rendering
+of sprites. WIP.
 
 ## Why
 To have some fun, small old school programs are fun to mess with.
