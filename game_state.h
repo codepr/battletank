@@ -34,7 +34,7 @@ typedef struct {
 } Bullet;
 
 // Represents a tank with its position, direction, and status.
-// Contains a single bullet for simplicity, can be extendend in
+// Contains a single bullet for simplicity, can be extended in
 // the future to handle multiple bullets, life points, power-ups etc.
 typedef struct {
     int x;
