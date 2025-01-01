@@ -199,7 +199,7 @@ static int socket_connect(const char *host, int port)
     }
 
     freeaddrinfo(servinfo);
-    return retval; /* Will be -1 if no connection succeded. */
+    return retval; /* Will be -1 if no connection succeeded. */
 
 err:
 
